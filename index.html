@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LEVEL 0 — A Short Film</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;600;700&family=Barlow:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #0c0b0a;
+    --concrete: #2a2826;
+    --concrete-light: #c8c4bc;
+    --muted: #6a6660;
+    --accent: #a8c878;
+    --text: #ccc8c0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  /* ── AUDIO PLAYER ── */
+  #player {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: rgba(12,11,10,0.92);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--concrete);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  #player .label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  #player .track-name {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    flex: 1;
+  }
+
+  #player audio {
+    flex: 1;
+    height: 32px;
+    opacity: 0.7;
+    filter: invert(1) brightness(0.4) sepia(1) hue-rotate(60deg);
+    min-width: 0;
+  }
+
+  /* Fallback embed player */
+  #suno-embed {
+    width: 100%;
+    height: 52px;
+    border: none;
+    flex: 1;
+  }
+
+  /* ── TITLE CARD ── */
+  #title-card {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    background: var(--void);
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(255,255,255,0.012) 80px, rgba(255,255,255,0.012) 81px),
+      repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(255,255,255,0.012) 80px, rgba(255,255,255,0.012) 81px);
+  }
+
+  .title-eyebrow {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 6px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 28px;
+    animation: flicker 10s infinite;
+  }
+
+  .main-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(100px, 20vw, 200px);
+    font-weight: 700;
+    letter-spacing: -6px;
+    line-height: 0.85;
+    color: var(--concrete-light);
+    text-transform: uppercase;
+  }
+
+  .main-title .zero {
+    display: block;
+    font-weight: 300;
+    font-size: 0.28em;
+    letter-spacing: 24px;
+    color: var(--muted);
+    margin-top: 20px;
+  }
+
+  .title-meta {
+    margin-top: 48px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 3px;
+    line-height: 2.2;
+  }
+
+  .scroll-cue {
+    position: absolute;
+    bottom: 80px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--muted);
+    text-transform: uppercase;
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  /* ── SYNOPSIS ── */
+  #synopsis {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 120px 40px;
+    text-align: center;
+  }
+
+  #synopsis .label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 5px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  #synopsis p {
+    font-size: 20px;
+    line-height: 1.9;
+    font-style: italic;
+    color: var(--text);
+  }
+
+  /* ── SCENE SECTIONS ── */
+  .scene {
+    height: 100vh;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+  }
+
+  .scene-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transform: scale(1.05);
+    transition: transform 8s ease;
+  }
+
+  .scene:hover .scene-bg { transform: scale(1); }
+
+  .scene-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(12,11,10,0.92) 0%,
+      rgba(12,11,10,0.4) 40%,
+      rgba(12,11,10,0.1) 70%,
+      transparent 100%
+    );
+  }
+
+  .scene-content {
+    position: relative;
+    z-index: 2;
+    padding: 0 60px 80px;
+    max-width: 800px;
+  }
+
+  .scene-number {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .scene-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 42px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--concrete-light);
+    letter-spacing: -0.5px;
+    margin-bottom: 16px;
+    line-height: 1;
+  }
+
+  .scene-vo {
+    font-size: 16px;
+    font-style: italic;
+    color: rgba(200,196,188,0.75);
+    line-height: 1.8;
+    max-width: 560px;
+    border-left: 2px solid var(--accent);
+    padding-left: 20px;
+  }
+
+  /* ── ACT DIVIDERS ── */
+  .act-break {
+    height: 40vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--void);
+    border-top: 1px solid var(--concrete);
+    border-bottom: 1px solid var(--concrete);
+  }
+
+  .act-break-inner {
+    text-align: center;
+  }
+
+  .act-break-inner h2 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .act-break-inner p {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+
+  /* ── FINAL CARD ── */
+  #final {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: var(--void);
+    padding-bottom: 80px;
+  }
+
+  #final h2 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(60px, 14vw, 140px);
+    font-weight: 700;
+    letter-spacing: -3px;
+    color: #1e1c1a;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 32px;
+  }
+
+  #final p {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--muted);
+    line-height: 2.4;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes flicker {
+    0%, 94%, 100% { opacity: 1; }
+    95% { opacity: 0.3; }
+    96% { opacity: 1; }
+    97.5% { opacity: 0.15; }
+    98% { opacity: 0.9; }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+  }
+
+  /* Fade-in on scroll */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<!-- FIXED AUDIO PLAYER -->
+<div id="player">
+  <span class="label">♪ Now Playing</span>
+  <span class="track-name">music.mp3</span>
+  <audio id="audio" controls loop>
+    <source src="music.mp3" type="audio/mpeg">
+  </audio>
+</div>
+
+<!-- Autoplay overlay -->
+<div id="start-overlay" style="
+  position:fixed; inset:0; z-index:9999;
+  background:#0c0b0a;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  cursor:pointer;
+  font-family:'Barlow Condensed',sans-serif;
+  transition: opacity 1.2s ease;
+">
+  <div style="font-size:11px;letter-spacing:6px;color:#a8c878;font-family:'Share Tech Mono',monospace;text-transform:uppercase;margin-bottom:24px;">// A Short Film by Pierce</div>
+  <div style="font-size:clamp(80px,16vw,160px);font-weight:700;letter-spacing:-4px;color:#c8c4bc;text-transform:uppercase;line-height:0.9;">Level<br><span style="font-size:0.3em;font-weight:300;letter-spacing:20px;color:#6a6660;">— zero —</span></div>
+  <div id="enter-text" style="margin-top:56px;font-size:11px;letter-spacing:5px;color:#6a6660;font-family:'Share Tech Mono',monospace;text-transform:uppercase;">Click anywhere to enter</div>
+</div>
+
+<script>
+  var overlay = document.getElementById('start-overlay');
+  var audio = document.getElementById('audio');
+  var enterText = document.getElementById('enter-text');
+
+  // Pulse animation on enter text
+  setInterval(function() {
+    enterText.style.opacity = enterText.style.opacity === '0.3' ? '1' : '0.3';
+  }, 1200);
+
+  overlay.addEventListener('click', function() {
+    // Force load and play
+    audio.load();
+    var playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.then(function() {
+        // Playback started — fade out overlay
+        overlay.style.opacity = '0';
+        setTimeout(function() { overlay.style.display = 'none'; }, 1200);
+      }).catch(function(err) {
+        console.warn('Audio play failed:', err);
+        // Still dismiss overlay even if audio fails
+        overlay.style.opacity = '0';
+        setTimeout(function() { overlay.style.display = 'none'; }, 1200);
+      });
+    } else {
+      overlay.style.opacity = '0';
+      setTimeout(function() { overlay.style.display = 'none'; }, 1200);
+    }
+  });
+</script>
+
+<!-- TITLE CARD -->
+<section id="title-card">
+  <div>
+    <div class="title-eyebrow">// A Short Film by Pierce</div>
+    <h1 class="main-title">
+      Level
+      <span class="zero">— zero —</span>
+    </h1>
+    <div class="title-meta">
+      Brutalist / Liminal &nbsp;·&nbsp; ~12 min &nbsp;·&nbsp; Single Actor<br>
+      Written &amp; Directed by Pierce
+    </div>
+  </div>
+  <div class="scroll-cue">↓ &nbsp; scroll &nbsp; ↓</div>
+</section>
+
+<!-- SYNOPSIS -->
+<section id="synopsis">
+  <div class="label">// The Story</div>
+  <p>
+    Ada is the last student on campus. As the building empties, the brutalist architecture begins to reveal its true nature — corridors loop, stairwells repeat, time stutters. She stops trying to escape. She walks deeper. In a vast impossible room at the end of everything, she understands: the building was never a trap. It was an invitation. She transcends.
+  </p>
+</section>
+
+<!-- ACT I -->
+<div class="act-break fade-in">
+  <div class="act-break-inner">
+    <h2>Act One</h2>
+    <p>The Ordinary &nbsp;·&nbsp; 0:00 – 3:00</p>
+  </div>
+</div>
+
+<!-- SCENE 1 -->
+<section class="scene">
+  <div class="scene-bg" style="background-image: url('images/scene01.jpg');"></div>
+  <div class="scene-overlay"></div>
+  <div class="scene-content fade-in">
+    <div class="scene-number">Shot 01 / Act I</div>
+    <h2 class="scene-title">Establishing — Campus Plaza</h2>
+    <p class="scene-vo">"I used to think this place was ugly. All that concrete. No windows. Like they built it to keep something in — or keep everything out. My professor said brutalist architecture is about honesty. The material is the message. What you see is what it is. No hiding."</p>
+  </div>
+</section>
+
+<!-- SCENE 2 -->
+<section class="scene">
+  <div class="scene-bg" style="background-image: url('images/scene02.jpg');"></div>
+  <div class="scene-overlay"></div>
+  <div class="scene-content fade-in">
+    <div class="scene-number">Shot 02 / Act I</div>
+    <h2 class="scene-title">Corridor Entry — Vanishing Point</h2>
+    <p class="scene-vo">"I stayed late to finish a paper. I was the last one out of the library. I remember thinking — this is nice. Having the whole place to yourself."</p>
+  </div>
+</section>
+
+<!-- ACT II -->
+<div class="act-break fade-in">
+  <div class="act-break-inner">
+    <h2>Act Two</h2>
+    <p>The Slippage &nbsp;·&nbsp; 3:00 – 8:00</p>
+  </div>
+</div>
+
+<!-- SCENE 3 -->
+<section class="scene">
+  <div class="scene-bg" style="background-image: url('images/scene03.jpg');"></div>
+  <div class="scene-overlay"></div>
+  <div class="scene-content fade-in">
+    <div class="scene-number">Shot 03 / Act II</div>
+    <h2 class="scene-title">The Stairwell Loop</h2>
+    <p class="scene-vo">"They say the backrooms are what happens when you noclip out of reality. Fall through the cracks of a rendered world. I used to think that was just internet mythology. But standing there, in that corridor, I thought — what if this was always real? What if everything else was the simulation?"</p>
+  </div>
+</section>
+
+<!-- SCENE 4 -->
+<section class="scene">
+  <div class="scene-bg" style="background-image: url('images/scene04.jpg');"></div>
+  <div class="scene-overlay"></div>
+  <div class="scene-content fade-in">
+    <div class="scene-number">Shot 04 / Act II</div>
+    <h2 class="scene-title">The Frozen Clock</h2>
+    <p class="scene-vo">She checks her phone. No signal. The clock reads 4:47. She waits. The clock still reads 4:47.</p>
+  </div>
+</section>
+
+<!-- SCENE 5 -->
+<section class="scene">
+  <div class="scene-bg" style="background-image: url('images/scene05.jpg');"></div>
+  <div class="scene-overlay"></div>
+  <div class="scene-content fade-in">
+    <div class="scene-number">Shot 05 / Act II</div>
+    <h2 class="scene-title">The Library — Blank Books</h2>
+    <p class="scene-vo">"I want to tell you I panicked. That I ran. That I screamed into the empty corridors. But I didn't. I sat down. I thought: someone built this. Someone poured all this concrete. Someone hung all these lights. Someone was here before me. Maybe someone will be here after."</p>
+  </div>
+</section>
+
+<!-- SCENE 6 -->
+<section class="scene">
+  <div class="scene-bg" style="background-image: url('images/scene06.jpg');"></div>
+  <div class="scene-overlay"></div>
+  <div class="scene-content fade-in">
+    <div class="scene-number">Shot 06 / Act II</div>
+    <h2 class="scene-title">The Window — No Sky</h2>
+    <p class="scene-vo">"I stopped being afraid somewhere in the second hour. Or maybe the tenth. Time was doing something it shouldn't. I remember thinking — the building isn't infinite. I am. My fear is infinite. The building is just very, very patient."</p>
+  </div>
+</section>
+
+<!-- SCENE 7 -->
+<section class="scene">
+  <div class="scene-bg" style="background-image: url('images/scene07.jpg');"></div>
+  <div class="scene-overlay"></div>
+  <div class="scene-content fade-in">
+    <div class="scene-number">Shot 07 / Act II</div>
+    <h2 class="scene-title">The Vending Machine</h2>
+    <p class="scene-vo">She finds a vending machine, still humming, still lit. She presses a button. Nothing comes out. She presses again. A low mechanical groan, then silence. She laughs — briefly, to herself. It is the only sound she makes in the entire film. She keeps walking.</p>
+  </div>
+</section>
+
+<!-- ACT III -->
+<div class="act-break fade-in">
+  <div class="act-break-inner">
+    <h2>Act Three</h2>
+    <p>The Transcendence &nbsp;·&nbsp; 8:00 – 12:00</p>
+  </div>
+</div>
+
+<!-- SCENE 8 -->
+<section class="scene">
+  <div class="scene-bg" style="background-image: url('images/scene08.jpg');"></div>
+  <div class="scene-overlay"></div>
+  <div class="scene-content fade-in">
+    <div class="scene-number">Shot 08 / Act III</div>
+    <h2 class="scene-title">Underground — The Touch</h2>
+    <p class="scene-vo">"I stopped trying to find the exit somewhere around the third loop. It wasn't defeat. It was more like — recognition. Like the building and I had reached an understanding. It would show me what it wanted to show me. I just had to stop insisting on a different destination."</p>
+  </div>
+</section>
+
+<!-- SCENE 9 -->
+<section class="scene">
+  <div class="scene-bg" style="background-image: url('images/scene09.jpg');"></div>
+  <div class="scene-overlay"></div>
+  <div class="scene-content fade-in">
+    <div class="scene-number">Shot 09 / Act III</div>
+    <h2 class="scene-title">The Infinite Room — Transcendence</h2>
+    <p class="scene-vo">"The building was never trying to trap me. I think it was waiting for me to stop running. To just — be here. To exist in a space that exists only to exist."<br><br>"And then I understood what the concrete always knew. That weight is not the same as heaviness. That stillness is not the same as being stuck. That some places are not meant to be passed through."</p>
+  </div>
+</section>
+
+<!-- FINAL SCENE -->
+<section class="scene">
+  <div class="scene-bg" style="background-image: url('images/scene10.jpg');"></div>
+  <div class="scene-overlay"></div>
+  <div class="scene-content fade-in">
+    <div class="scene-number">Shot 10 / Coda</div>
+    <h2 class="scene-title">The Backpack</h2>
+    <p class="scene-vo">"I didn't leave. I didn't get lost. I went through."</p>
+  </div>
+</section>
+
+<!-- FINAL TITLE CARD -->
+<section id="final">
+  <h2>Level 0</h2>
+  <p>
+    Written &amp; Directed by Pierce<br>
+    Music — "Concrete Light"<br>
+    A Short Film
+  </p>
+</section>
+
+<script>
+  // Fade-in on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(el => {
+      if (el.isIntersecting) el.target.classList.add('visible');
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
